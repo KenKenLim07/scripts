@@ -1,1 +1,0 @@
-470598 ssh -f -N -o StrictHostKeyChecking=no -L 127.0.0.1:27042:127.0.0.1:27042 mobile@192.168.254.133

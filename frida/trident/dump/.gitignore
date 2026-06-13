@@ -1,0 +1,8 @@
+# IL2CPP dump artifacts — too large for GitHub (>100MB). Regenerate locally.
+UnityFramework
+output/
+*.log
+
+# Il2CppDumper clones (nested git repos)
+Il2CppDumper/
+Il2CppDumper-v39/

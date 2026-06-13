@@ -1,13 +1,6 @@
 /**
  * Smart / GigaLife — MASTER instrumentation (v3)
- * - Full REQUEST headers (task.resume)
- * - RESPONSE bodies via URLSession delegate hooks
- * - Alamofire class scan + hooks where exposed
- * - JSON parse tap, auth URL watch, optional SSL relax
- * - Keychain read tracing (token storage)
- *
- * SMART_VERBOSE=true  → all hosts
- * SMART_SSL_BYPASS=true → accept server trust (lab only, your device)
+ * See ../README.md
  */
 
 'use strict';
@@ -19,7 +12,7 @@ var SMART_HOST_RE = /smart\.com\.ph/i;
 var AUTH_URL_RE = /\/(sso|oauth|token|refresh|login|auth)\b/i;
 
 var requestUrlById = {};
-var taskBuffers = {}; // taskId -> { url, parts: [NSData] }
+var taskBuffers = {};
 
 function log(msg) {
   console.log('[smart_hook] ' + msg);
@@ -244,7 +237,6 @@ function dumpResponseSimple(url, response, data, error) {
   logBlock('RESPONSE', lines);
 }
 
-// ─── NSMutableURLRequest ───────────────────────────────────────────
 function hookNSMutableURLRequest() {
   if (!ObjC.available) return;
   var Cls = ObjC.classes.NSMutableURLRequest;
@@ -295,7 +287,6 @@ function hookNSMutableURLRequest() {
   log('Hooked NSMutableURLRequest');
 }
 
-// ─── NSURLSession task.resume (full request snapshot) ─────────────────
 function hookNSURLSessionTaskResume() {
   if (!ObjC.available) return;
   var Task = ObjC.classes.NSURLSessionTask;
@@ -315,7 +306,6 @@ function hookNSURLSessionTaskResume() {
   log('Hooked NSURLSessionTask.resume');
 }
 
-// ─── URLSession delegate: accumulate + flush responses ────────────────
 function hookUrlSessionDelegates() {
   if (!ObjC.available) return;
   var resolver = new ApiResolver('objc');
@@ -369,7 +359,6 @@ function hookUrlSessionDelegates() {
   log('URLSession delegate hooks installed');
 }
 
-// ─── NSURLSession completion blocks (backup path) ────────────────────
 function hookNSURLSession() {
   if (!ObjC.available) return;
   var NSURLSession = ObjC.classes.NSURLSession;
@@ -416,7 +405,6 @@ function hookNSURLSession() {
   log('Hooked NSURLSession dataTask');
 }
 
-// ─── Alamofire (best-effort ObjC/Swift exposed methods) ─────────────
 function hookAlamofire() {
   if (!ObjC.available) return;
   var found = [];
@@ -426,22 +414,8 @@ function hookAlamofire() {
     }
   });
   if (found.length) log('Alamofire-related classes: ' + found.slice(0, 15).join(', '));
-
-  // Common @objc response handlers
-  found.forEach(function (className) {
-    var C = ObjC.classes[className];
-    if (!C) return;
-    ['- URLSession:dataTask:didReceiveData:', '- URLSession:task:didCompleteWithError:'].forEach(
-      function (sel) {
-        if (C[sel]) {
-          log('(class has ' + sel + ' on ' + className + ')');
-        }
-      }
-    );
-  });
 }
 
-// ─── JSON responses (catch parsed API payloads) ───────────────────────
 function hookJSONSerialization() {
   if (!ObjC.available) return;
   var Cls = ObjC.classes.NSJSONSerialization;
@@ -465,7 +439,6 @@ function hookJSONSerialization() {
   log('Hooked NSJSONSerialization');
 }
 
-// ─── SSL pinning / trust evaluation (lab device only) ───────────────
 function hookSSLPinningBypass() {
   if (!SMART_SSL_BYPASS) return;
 
@@ -504,7 +477,6 @@ function hookSSLPinningBypass() {
   });
 }
 
-// ─── Keychain reads (tokens) ──────────────────────────────────────────
 function hookKeychain() {
   var SecItemCopyMatching = Module.getGlobalExportByName('SecItemCopyMatching');
   if (!SecItemCopyMatching) return;
@@ -534,7 +506,6 @@ function hookKeychain() {
   log('Hooked SecItemCopyMatching');
 }
 
-// ─── main ─────────────────────────────────────────────────────────────
 log('═══ Smart/GigaLife MASTER hook v3 ═══');
 log('Filter: *.smart.com.ph | SSL_BYPASS=' + SMART_SSL_BYPASS);
 
@@ -552,7 +523,7 @@ if (ObjC.available) {
   hookJSONSerialization();
   hookSSLPinningBypass();
   hookKeychain();
-  log('Ready — use Smart; watch smart_log.txt for REQUEST + RESPONSE');
+  log('Ready — use Smart; watch logs/smart_log.txt');
 } else {
   log('ObjC not available');
 }
